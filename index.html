@@ -1,48 +1,91 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>The Global Brief</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 1200px;
-      margin: auto;
-      padding: 20px;
-      background: #f7f4ef;
-    }
-    h1 {
-      border-bottom: 3px solid black;
-      padding-bottom: 10px;
-    }
-    .section {
-      margin-top: 30px;
-    }
-    .article {
-      padding: 10px 0;
-      border-bottom: 1px solid #ccc;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Global Brief</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
+        h2 { margin-top: 30px; color: #222; }
+        .news-container { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .news-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .news-item:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
+        .news-title { font-weight: bold; font-size: 1.1em; color: #0066cc; text-decoration: none; }
+        .news-title:hover { text-decoration: underline; }
+        .news-meta { font-size: 0.85em; color: #666; margin: 5px 0; }
+        .loading { color: #888; font-style: italic; }
+    </style>
 </head>
 <body>
-  <h1>THE GLOBAL BRIEF</h1>  <div class="section">
+
+    <h1>THE GLOBAL BRIEF</h1>
+
     <h2>🌍 Global Headlines</h2>
-    <div id="global">Coming soon...</div>
-  </div>  <div class="section">
+    <div id="global-headlines" class="news-container"><span class="loading">Loading live feed...</span></div>
+
     <h2>🇦🇪 UAE & Dubai</h2>
-    <div id="uae">Coming soon...</div>
-  </div>  <div class="section">
+    <div id="uae-dubai" class="news-container"><span class="loading">Loading live feed...</span></div>
+
     <h2>🇪🇺 Europe</h2>
-    <div id="europe">Coming soon...</div>
-  </div>  <div class="section">
+    <div id="europe" class="news-container"><span class="loading">Loading live feed...</span></div>
+
     <h2>🏗 Construction & Infrastructure</h2>
-    <div id="construction">Coming soon...</div>
-  </div>  <div class="section">
+    <div id="construction" class="news-container"><span class="loading">Loading live feed...</span></div>
+
     <h2>💼 Business & Technology</h2>
-    <div id="business">Coming soon...</div>
-  </div>  <div class="section">
+    <div id="business-tech" class="news-container"><span class="loading">Loading live feed...</span></div>
+
     <h2>📈 Markets & Commodities</h2>
-    <div id="markets">Coming soon...</div>
-  </div>
+    <div id="markets" class="news-container"><span class="loading">Loading live feed...</span></div>
+
+    <script>
+        // Map your container element IDs to public RSS feeds
+        const feeds = {
+            'global-headlines': 'http://bbci.co.uk',
+            'uae-dubai': 'https://khaleejtimes.com', 
+            'europe': 'http://bbci.co.uk',
+            'construction': 'https://constructionweekonline.com',
+            'business-tech': 'https://cnbc.com',
+            'markets': 'https://marketwatch.com'
+        };
+
+        async function loadFeed(elementId, rssUrl) {
+            const container = document.getElementById(elementId);
+            // Route through a free RSS-to-JSON converter to bypass CORS browser restrictions
+            const converterUrl = `https://rss2json.com{encodeURIComponent(rssUrl)}`;
+            
+            try {
+                const response = await fetch(converterUrl);
+                const data = await response.json();
+                
+                if (data.status === 'ok' && data.items.length > 0) {
+                    container.innerHTML = ''; // Clear loading text
+                    
+                    // Display the top 3 latest articles for each section
+                    data.items.slice(0, 3).forEach(item => {
+                        const itemHtml = `
+                            <div class="news-item">
+                                <a href="${item.link}" target="_blank" class="news-title">${item.title}</a>
+                                <div class="news-meta">${new Date(item.pubDate).toLocaleDateString()}</div>
+                                <div class="news-desc">${item.description || ''}</div>
+                            </div>
+                        `;
+                        container.innerHTML += itemHtml;
+                    });
+                } else {
+                    container.innerHTML = '<span class="loading">No news available at the moment.</span>';
+                }
+            } catch (error) {
+                console.error(`Failed to load ${elementId}:`, error);
+                container.innerHTML = '<span class="loading">Error loading live updates.</span>';
+            }
+        }
+
+        // Initialize and fetch all sections at once
+        window.addEventListener('DOMContentLoaded', () => {
+            Object.entries(feeds).forEach(([id, url]) => loadFeed(id, url));
+        });
+    </script>
 </body>
 </html>
