@@ -6,14 +6,15 @@
     <title>The Global Brief</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
-        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; }
-        h2 { margin-top: 30px; color: #222; }
-        .news-container { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        h2 { margin-top: 30px; color: #222; font-size: 1.3em; }
+        .news-container { background: #fff; padding: 15px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
         .news-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         .news-item:last-child { border: none; margin-bottom: 0; padding-bottom: 0; }
-        .news-title { font-weight: bold; font-size: 1.1em; color: #0066cc; text-decoration: none; }
+        .news-title { font-weight: bold; font-size: 1.1em; color: #0066cc; text-decoration: none; display: block; margin-bottom: 4px; }
         .news-title:hover { text-decoration: underline; }
-        .news-meta { font-size: 0.85em; color: #666; margin: 5px 0; }
+        .news-meta { font-size: 0.85em; color: #666; margin-bottom: 8px; }
+        .news-desc { font-size: 0.95em; line-height: 1.4; color: #444; }
         .loading { color: #888; font-style: italic; }
     </style>
 </head>
@@ -40,9 +41,9 @@
     <div id="markets" class="news-container"><span class="loading">Loading live feed...</span></div>
 
     <script>
-        // Map your container element IDs to public RSS feeds
+        // Mapping elements to highly stable public RSS XML endpoints
         const feeds = {
-            'global-headlines': 'http://bbci.co.uk',
+            'global-headlines': 'https://nytimes.com',
             'uae-dubai': 'https://khaleejtimes.com', 
             'europe': 'http://bbci.co.uk',
             'construction': 'https://constructionweekonline.com',
@@ -52,37 +53,42 @@
 
         async function loadFeed(elementId, rssUrl) {
             const container = document.getElementById(elementId);
-            // Route through a free RSS-to-JSON converter to bypass CORS browser restrictions
-            const converterUrl = `https://rss2json.com{encodeURIComponent(rssUrl)}`;
+            // Swapping to feed2json.org proxy to prevent CORS blocks cleanly and reliably
+            const converterUrl = `https://toptal.com{encodeURIComponent(rssUrl)}`;
             
             try {
                 const response = await fetch(converterUrl);
                 const data = await response.json();
                 
-                if (data.status === 'ok' && data.items.length > 0) {
-                    container.innerHTML = ''; // Clear loading text
+                // feed2json maps articles into the standard JSON Feed "items" array
+                if (data && data.items && data.items.length > 0) {
+                    container.innerHTML = ''; 
                     
-                    // Display the top 3 latest articles for each section
+                    // Take only the top 3 freshest news blocks per topic
                     data.items.slice(0, 3).forEach(item => {
+                        // Handle varying date format schemas cleanly
+                        const rawDate = item.date_published || item.date_modified || '';
+                        const formattedDate = rawDate ? new Date(rawDate).toLocaleDateString() : 'Recent';
+                        
                         const itemHtml = `
                             <div class="news-item">
-                                <a href="${item.link}" target="_blank" class="news-title">${item.title}</a>
-                                <div class="news-meta">${new Date(item.pubDate).toLocaleDateString()}</div>
-                                <div class="news-desc">${item.description || ''}</div>
+                                <a href="${item.url}" target="_blank" class="news-title">${item.title}</a>
+                                <div class="news-meta">📅 ${formattedDate}</div>
+                                <div class="news-desc">${item.summary || item.content_text || ''}</div>
                             </div>
                         `;
                         container.innerHTML += itemHtml;
                     });
                 } else {
-                    container.innerHTML = '<span class="loading">No news available at the moment.</span>';
+                    container.innerHTML = '<span class="loading">No articles found in this category.</span>';
                 }
             } catch (error) {
-                console.error(`Failed to load ${elementId}:`, error);
+                console.error(`Failed loading ${elementId}:`, error);
                 container.innerHTML = '<span class="loading">Error loading live updates.</span>';
             }
         }
 
-        // Initialize and fetch all sections at once
+        // Initialize and fire off all requests in parallel
         window.addEventListener('DOMContentLoaded', () => {
             Object.entries(feeds).forEach(([id, url]) => loadFeed(id, url));
         });
